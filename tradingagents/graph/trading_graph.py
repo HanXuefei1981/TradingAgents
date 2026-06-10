@@ -7,6 +7,11 @@ import json
 from datetime import datetime, timedelta
 from typing import Dict, Any, Tuple, List, Optional
 
+# Apply yfinance rate limiting before import
+if os.environ.get("TRADINGAGENTS_YFINANCE_RATELIMIT", "1") == "1":
+    from tradingagents.yf_rate_limit import apply_rate_limit
+    apply_rate_limit()
+
 import yfinance as yf
 
 logger = logging.getLogger(__name__)
@@ -237,7 +242,10 @@ class TradingAgentsGraph:
             end = start + timedelta(days=holding_days + 7)  # buffer for weekends/holidays
             end_str = end.strftime("%Y-%m-%d")
 
+            import time as _time, random as _random
+            _time.sleep(_random.uniform(0.5, 1.5))
             stock = yf.Ticker(ticker).history(start=trade_date, end=end_str)
+            _time.sleep(_random.uniform(0.5, 1.5))
             bench = yf.Ticker(benchmark).history(start=trade_date, end=end_str)
 
             if len(stock) < 2 or len(bench) < 2:

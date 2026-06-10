@@ -262,6 +262,7 @@ def get_fundamentals(
     """Get company fundamentals overview from yfinance."""
     canonical = normalize_symbol(ticker)
     try:
+        import time as _t, random as _r; _t.sleep(_r.uniform(0.3, 1.0))
         ticker_obj = yf.Ticker(canonical)
         info = yf_retry(lambda: ticker_obj.info)
 
@@ -330,6 +331,7 @@ def get_balance_sheet(
     """Get balance sheet data from yfinance."""
     canonical = normalize_symbol(ticker)
     try:
+        import time as _t, random as _r; _t.sleep(_r.uniform(0.3, 1.0))
         ticker_obj = yf.Ticker(canonical)
 
         if freq.lower() == "quarterly":
@@ -365,6 +367,7 @@ def get_cashflow(
     """Get cash flow data from yfinance."""
     canonical = normalize_symbol(ticker)
     try:
+        import time as _t, random as _r; _t.sleep(_r.uniform(0.3, 1.0))
         ticker_obj = yf.Ticker(canonical)
 
         if freq.lower() == "quarterly":
@@ -400,6 +403,7 @@ def get_income_statement(
     """Get income statement data from yfinance."""
     canonical = normalize_symbol(ticker)
     try:
+        import time as _t, random as _r; _t.sleep(_r.uniform(0.3, 1.0))
         ticker_obj = yf.Ticker(canonical)
 
         if freq.lower() == "quarterly":
@@ -433,6 +437,7 @@ def get_insider_transactions(
     """Get insider transactions data from yfinance."""
     canonical = normalize_symbol(ticker)
     try:
+        import time as _t, random as _r; _t.sleep(_r.uniform(0.3, 1.0))
         ticker_obj = yf.Ticker(canonical)
         data = yf_retry(lambda: ticker_obj.insider_transactions)
 

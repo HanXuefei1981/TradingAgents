@@ -15,6 +15,17 @@ try:
 except ImportError:
     pass
 
+# Apply yfinance rate limiting (Yahoo aggressively rate-limits non-US IPs).
+# Controlled by TRADINGAGENTS_YFINANCE_RATELIMIT env var (default: enabled).
+import os as _os
+try:
+    if _os.environ.get("TRADINGAGENTS_YFINANCE_RATELIMIT", "1") == "1":
+        from tradingagents.yf_rate_limit import apply_rate_limit
+        apply_rate_limit()
+except Exception:
+    pass
+del _os
+
 # langchain-core 1.3.3 calls surface_langchain_deprecation_warnings() in
 # its own __init__, which prepends default-action filters for its
 # subclassed warning categories. To suppress a specific warning we must

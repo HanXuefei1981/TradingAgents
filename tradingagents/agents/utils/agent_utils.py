@@ -72,6 +72,8 @@ def resolve_instrument_identity(ticker: str) -> dict:
     the lookup happens at most once per ticker per process.
     """
     try:
+        import time, random
+        time.sleep(random.uniform(0.5, 1.5))  # rate limit yfinance
         info = yf.Ticker(ticker.upper()).info or {}
     except Exception as exc:  # noqa: BLE001 — fail open, never block the run
         logger.debug("Could not resolve instrument identity for %s: %s", ticker, exc)
