@@ -41,6 +41,7 @@ from tradingagents.agents.utils.structured import (
 )
 from tradingagents.dataflows.reddit import fetch_reddit_posts
 from tradingagents.dataflows.stocktwits import fetch_stocktwits_messages
+from tradingagents.dataflows.ashare_news import fetch_news_smart, _is_ashare
 
 
 def _seven_days_back(trade_date: str) -> str:
@@ -63,12 +64,18 @@ def create_sentiment_analyst(llm):
         start_date = _seven_days_back(end_date)
         instrument_context = get_instrument_context_from_state(state)
 
-        # Pre-fetch all three sources. Each fetcher degrades gracefully and
-        # returns a string (no exceptions surface from here), so the LLM
-        # always sees something — either real data or a clear placeholder.
-        news_block = get_news.func(ticker, start_date, end_date)
-        stocktwits_block = fetch_stocktwits_messages(ticker, limit=30)
-        reddit_block = fetch_reddit_posts(ticker)
+        # Pre-fetch sentiment sources.
+        # A-shares: Eastmoney news (Chinese), skip StockTwits/Reddit (US-only)
+        # US stocks: Yahoo Finance news + StockTwits + Reddit
+        is_ashare = _is_ashare(ticker)
+        if is_ashare:
+            news_block = fetch_news_smart(ticker, start_date, end_date)
+            stocktwits_block = "<StockTwits unavailable: A-share stocks are not discussed on this US retail platform>"
+            reddit_block = "<Reddit unavailable: A-share stocks have negligible discussion on English-language subreddits>"
+        else:
+            news_block = get_news.func(ticker, start_date, end_date)
+            stocktwits_block = fetch_stocktwits_messages(ticker, limit=30)
+            reddit_block = fetch_reddit_posts(ticker)
 
         system_message = _build_system_message(
             ticker=ticker,
