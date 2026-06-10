@@ -11,6 +11,17 @@ from .y_finance import (
     get_insider_transactions as get_yfinance_insider_transactions,
 )
 from .yfinance_news import get_news_yfinance, get_global_news_yfinance
+from .tushare_data import (
+    get_Tushare_data_online,
+    get_tushare_fundamentals,
+    get_tushare_balance_sheet,
+    get_tushare_cashflow,
+    get_tushare_income_statement,
+    get_tushare_insider_transactions,
+    get_tushare_news,
+    get_tushare_global_news,
+    get_tushare_indicators,
+)
 from .alpha_vantage import (
     get_stock as get_alpha_vantage_stock,
     get_indicator as get_alpha_vantage_indicator,
@@ -64,6 +75,7 @@ TOOLS_CATEGORIES = {
 VENDOR_LIST = [
     "yfinance",
     "alpha_vantage",
+    "tushare",
 ]
 
 # Mapping of methods to their vendor-specific implementations
@@ -72,41 +84,50 @@ VENDOR_METHODS = {
     "get_stock_data": {
         "alpha_vantage": get_alpha_vantage_stock,
         "yfinance": get_YFin_data_online,
+        "tushare": get_Tushare_data_online,
     },
     # technical_indicators
     "get_indicators": {
         "alpha_vantage": get_alpha_vantage_indicator,
         "yfinance": get_stock_stats_indicators_window,
+        "tushare": get_tushare_indicators,
     },
     # fundamental_data
     "get_fundamentals": {
         "alpha_vantage": get_alpha_vantage_fundamentals,
         "yfinance": get_yfinance_fundamentals,
+        "tushare": get_tushare_fundamentals,
     },
     "get_balance_sheet": {
         "alpha_vantage": get_alpha_vantage_balance_sheet,
         "yfinance": get_yfinance_balance_sheet,
+        "tushare": get_tushare_balance_sheet,
     },
     "get_cashflow": {
         "alpha_vantage": get_alpha_vantage_cashflow,
         "yfinance": get_yfinance_cashflow,
+        "tushare": get_tushare_cashflow,
     },
     "get_income_statement": {
         "alpha_vantage": get_alpha_vantage_income_statement,
         "yfinance": get_yfinance_income_statement,
+        "tushare": get_tushare_income_statement,
     },
     # news_data
     "get_news": {
         "alpha_vantage": get_alpha_vantage_news,
         "yfinance": get_news_yfinance,
+        "tushare": get_tushare_news,
     },
     "get_global_news": {
         "yfinance": get_global_news_yfinance,
         "alpha_vantage": get_alpha_vantage_global_news,
+        "tushare": get_tushare_global_news,
     },
     "get_insider_transactions": {
         "alpha_vantage": get_alpha_vantage_insider_transactions,
         "yfinance": get_yfinance_insider_transactions,
+        "tushare": get_tushare_insider_transactions,
     },
 }
 
@@ -117,9 +138,10 @@ def get_category_for_method(method: str) -> str:
             return category
     raise ValueError(f"Method '{method}' not found in any category")
 
-def get_vendor(category: str, method: str = None) -> str:
+def get_vendor(category: str, method: str = None, ticker: str = None) -> str:
     """Get the configured vendor for a data category or specific tool method.
     Tool-level configuration takes precedence over category-level.
+    Auto-detects A-share tickers and routes to tushare vendor.
     """
     config = get_config()
 
@@ -129,13 +151,31 @@ def get_vendor(category: str, method: str = None) -> str:
         if method in tool_vendors:
             return tool_vendors[method]
 
+    # Auto-detect A-share tickers -> prefer tushare
+    if ticker and _is_ashare(ticker):
+        return "tushare,yfinance,alpha_vantage"
+
     # Fall back to category-level configuration
     return config.get("data_vendors", {}).get(category, "default")
+
+
+def _is_ashare(ticker: str) -> bool:
+    """Detect whether a ticker is an A-share stock."""
+    t = ticker.strip().upper()
+    # Chinese stock suffixes
+    if t.endswith(('.SH', '.SS', '.SZ', '.BJ')):
+        return True
+    # 6-digit numeric code
+    if len(t) == 6 and t.isdigit():
+        return True
+    return False
 
 def route_to_vendor(method: str, *args, **kwargs):
     """Route method calls to appropriate vendor implementation with fallback support."""
     category = get_category_for_method(method)
-    vendor_config = get_vendor(category, method)
+    # Try to extract ticker from args for A-share detection
+    ticker = args[0] if args else None
+    vendor_config = get_vendor(category, method, ticker)
     primary_vendors = [v.strip() for v in vendor_config.split(',')]
 
     if method not in VENDOR_METHODS:
